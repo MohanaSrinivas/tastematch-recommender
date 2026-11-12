@@ -19,3 +19,23 @@ def evaluate_users(test_ratings, recommend: Callable[[int, int], list[int]], k: 
         results.append(precision_recall_ndcg(recommend(int(user_id), k), relevant, k))
     if not results: return {"users_evaluated": 0, "precision_at_k": 0.0, "recall_at_k": 0.0, "ndcg_at_k": 0.0}
     return {"users_evaluated": len(results), **{key: sum(row[key] for row in results)/len(results) for key in results[0]}}
+
+def evaluate_content_users(train_ratings, test_ratings, recommend: Callable[[int, int], list[int]], k: int = 10, threshold: float = 4.0):
+    """Evaluate item-to-item content recommendations from a known liked train item.
+
+    The most recently rated training item at or above ``threshold`` is the query.
+    Users without a positive training seed are omitted, as are users without a
+    relevant held-out item (the latter is handled by ``evaluate_users``).
+    """
+    seeds = {}
+    liked = train_ratings.loc[train_ratings.rating >= threshold]
+    for user_id, group in liked.groupby("userId"):
+        latest = group.sort_values("timestamp").iloc[-1]
+        seeds[int(user_id)] = int(latest.movieId)
+    eligible_test = test_ratings[test_ratings.userId.isin(seeds)]
+    return evaluate_users(
+        eligible_test,
+        lambda user_id, limit: recommend(seeds[int(user_id)], limit),
+        k=k,
+        threshold=threshold,
+    )
