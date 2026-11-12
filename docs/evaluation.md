@@ -1,0 +1,2 @@
+# Evaluation protocol
+The split is chronological within each user. The final 20% of each user's events (rounded, at least one) form the test set while at least one event remains in train. Test ratings >= 4.0 are relevant. Precision@K divides hits by K, Recall@K divides hits by relevant test items, and NDCG@K discounts hits by log2(rank+1). Metrics are macro-averaged over users with at least one relevant held-out item. This is a leave-latest-out offline protocol, not a randomized IID estimate.
